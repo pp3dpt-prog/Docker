@@ -2,40 +2,40 @@ const express = require('express');
 const { exec } = require('child_process');
 const fs = require('fs');
 const cors = require('cors');
-// ADICIONADO: Importar a biblioteca do Supabase
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Rota simples para o Render saber que o servidor está vivo
+// Rota de saúde para o Render
 app.get('/', (req, res) => {
     res.send('Servidor de Medalhas 3D está ONLINE! 🚀');
 });
 
-// 1. Configuração Supabase (Lidas das variáveis de ambiente do Render)
+// Configuração Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Verificação de segurança
 if (!supabaseUrl || !supabaseKey) {
-    console.error("❌ ERRO: Variáveis SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configuradas!");
+    console.error("❌ ERRO: Variáveis de ambiente não configuradas!");
 }
 
-// MOVIDO PARA AQUI: Criar o cliente apenas depois de ter as chaves e a biblioteca
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.post('/generate-stl', (req, res) => {
+    // 1. Extrair dados do corpo primeiro
     const { 
         nome, largura, altura, temNFC, 
         tamanhoFonte, nomePosX, nomePosY, 
         nfcPosX, nfcPosY 
     } = req.body;
     
+    // 2. Definir o nome do ficheiro
     const filename = `medalha_${nome.replace(/\s+/g, '_')}_${Date.now()}.stl`;
 
-    const cmd = `xvfb-run openscad -o ${filename} \
+    // 3. Comando corrigido com xvfb-run isolado para o OpenSCAD
+    const cmd = `xvfb-run -a -s "-screen 0 640x480x24" openscad -o ${filename} \
     -D 'nome="${nome}"' \
     -D 'largura=${largura}' \
     -D 'altura=${altura}' \
@@ -58,7 +58,7 @@ app.post('/generate-stl', (req, res) => {
         try {
             const fileBuffer = fs.readFileSync(`./${filename}`);
 
-            // Upload para o Bucket 'medalhas' que já criaste
+            // Upload para Supabase Storage
             const { data, error: uploadError } = await supabase.storage
                 .from('medalhas')
                 .upload(`stls/${filename}`, fileBuffer, {
@@ -68,7 +68,7 @@ app.post('/generate-stl', (req, res) => {
 
             if (uploadError) throw uploadError;
 
-            // Inserir registo na BD
+            // Registo na base de dados
             const { error: dbError } = await supabase
                 .from('pedidos_tags')
                 .insert([{ 
@@ -79,6 +79,7 @@ app.post('/generate-stl', (req, res) => {
 
             if (dbError) console.error("⚠️ Erro na BD:", dbError);
 
+            // Limpar ficheiro local após upload bem-sucedido
             if (fs.existsSync(`./${filename}`)) fs.unlinkSync(`./${filename}`);
 
             res.status(200).json({ 

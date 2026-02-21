@@ -6,6 +6,10 @@ FROM node:18-slim
 RUN apt-get update && apt-get install -y \
     openscad \
     xvfb \
+    dbus-x11 \
+    libxrender1 \
+    libxext6 \
+    libxinerama1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -21,4 +25,4 @@ COPY . .
 EXPOSE 3000
 
 # Comando para rodar com Xvfb (necessário para o OpenSCAD rodar em servidores sem monitor)
-CMD ["xvfb-run", "node", "server.js"]
+CMD ["node", "server.js"]
