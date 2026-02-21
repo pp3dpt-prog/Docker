@@ -9,9 +9,6 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copia o ícone NFC para a raiz do projeto no contentor
-COPY public/nfc-icon.svg ./nfc-icon.svg
-
 # Copia os ficheiros do projeto
 COPY package*.json ./
 RUN npm install
@@ -21,4 +18,5 @@ COPY . .
 EXPOSE 3000
 
 # Comando para rodar com Xvfb (necessário para o OpenSCAD rodar em servidores sem monitor)
+
 CMD ["xvfb-run", "node", "server.js"]
