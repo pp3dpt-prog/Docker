@@ -6,15 +6,21 @@ fator_pos = 0.25;
 
 // --- GEOMETRIAS PRECISAS (Unificação Modelo + Template) ---
 module gerar_base(f, w, h, d) {
+    // Convertendo para o sistema de coordenadas da App (onde w e h são metades)
+    w_half = w / 2;
+    h_half = h / 2;
+
     if (f == "osso") {
         union() {
-        // Corpo central mais retangular
-        cube([w*0.75, h*0.5, d], center=true); 
-        // Extremidades posicionadas para criar a silhueta correta
-        translate([w*0.37, h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
-        translate([w*0.37, -h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
-        translate([-w*0.37, h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
-        translate([-w*0.37, -h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
+            // O retângulo central (mesmas proporções da App: w*0.6 e h*0.8)
+            cube([w_half * 1.2, h_half * 1.6, d], center=true);
+            
+            // Os 4 círculos das extremidades (diâmetro h*1.2 como na App)
+            // Posicionados em w*0.3 e h*0.3
+            translate([w_half * 0.6, h_half * 0.6, 0])  cylinder(h=d, d=h_half * 1.2, center=true);
+            translate([w_half * 0.6, -h_half * 0.6, 0]) cylinder(h=d, d=h_half * 1.2, center=true);
+            translate([-w_half * 0.6, h_half * 0.6, 0]) cylinder(h=d, d=h_half * 1.2, center=true);
+            translate([-w_half * 0.6, -h_half * 0.6, 0]) cylinder(h=d, d=h_half * 1.2, center=true);
         }
     } 
     else if (f == "coracao") {
@@ -53,8 +59,9 @@ union() {
     // Olhal posicionado acima da borda superior (altura/2)
     translate([0, (altura/2) + 2, 0]) 
         difference() {
-            cylinder(h=3.4, d=7, center=true);
-            cylinder(h=5, d=3.5, center=true);
+            // No bloco difference() do final do ficheiro:
+            translate([0, (altura/2) - 4, 0])
+                cylinder(h=10, d=3.5, center=true);
         }
 
 
