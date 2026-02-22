@@ -114,12 +114,19 @@ union() {
                 return res.status(500).json({ error: "Falha na geração 3D" });
             }
 
+            // Altera a linha do upload no server.js para isto:
             const fileBuffer = fs.readFileSync(filename);
-            const { data, error: uploadError } = await supabase.storage
+            const { data, uploadError } = await supabase.storage
                 .from('medalhas')
-                .upload(`stls/${filename}`, fileBuffer, { contentType: 'model/stl' });
+                .upload(`stls/${filename}`, fileBuffer, { 
+                    contentType: 'model/stl',
+                    upsert: true // Adiciona isto para evitar erros de ficheiros duplicados
+                });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error("Erro no Upload Supabase:", uploadError); // Isto vai mostrar o erro real nos logs do Render
+                throw uploadError;
+            }
 
             // Limpeza de ficheiros temporários
             fs.unlinkSync(tempScad);
