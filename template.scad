@@ -8,11 +8,13 @@ fator_pos = 0.25;
 module gerar_base(f, w, h, d) {
     if (f == "osso") {
         union() {
-            cube([w*0.6, h*0.8, d], center=true);
-            translate([w*0.3, h*0.3, 0]) cylinder(h=d, d=h*0.6, center=true);
-            translate([w*0.3, -h*0.3, 0]) cylinder(h=d, d=h*0.6, center=true);
-            translate([-w*0.3, h*0.3, 0]) cylinder(h=d, d=h*0.6, center=true);
-            translate([-w*0.3, -h*0.3, 0]) cylinder(h=d, d=h*0.6, center=true);
+        // Corpo central mais retangular
+        cube([w*0.75, h*0.5, d], center=true); 
+        // Extremidades posicionadas para criar a silhueta correta
+        translate([w*0.37, h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
+        translate([w*0.37, -h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
+        translate([-w*0.37, h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
+        translate([-w*0.37, -h*0.25, 0]) cylinder(h=d, d=h*0.55, center=true);
         }
     } 
     else if (f == "coracao") {
@@ -47,16 +49,14 @@ module gerar_base(f, w, h, d) {
 
 // --- CONSTRUÇÃO FINAL (CORTE EM SANDUÍCHE) ---
 union() {
-    difference() {
-        // 1. CORPO DA PEÇA (4mm de espessura total: de Z -2 até Z +2)
-        union() {
-            gerar_base(forma, largura, altura, 4);
-            // Olhal da argola
-            translate([0, (alturaArgola/2), 0]) cylinder(h=4, d=8, center=true);
+    gerar_base(forma, largura, altura, 3.4);
+    // Olhal posicionado acima da borda superior (altura/2)
+    translate([0, (altura/2) + 2, 0]) 
+        difference() {
+            cylinder(h=3.4, d=7, center=true);
+            cylinder(h=5, d=3.5, center=true);
         }
 
-        // 2. FURO DA ARGOLA
-        translate([0, (alturaArgola/2), -3]) cylinder(h=6, d=4.5);
 
         // 3. CAVIDADE DO CHIP (Centralizada em X, Y e Z)
         // O chip de 25mm fica num buraco de 25.1mm.
@@ -86,4 +86,3 @@ union() {
     translate([posTextoFrenteH * fator_pos, posTextoFrenteV * fator_pos, 2])
         linear_extrude(height = 1.2)
             text(nome, size=(tamFonte/4), halign="center", valign="center", font="Liberation Sans:style=Bold");
-}
