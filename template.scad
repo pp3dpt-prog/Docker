@@ -68,7 +68,9 @@ union() {
         // 4. VERSO (Texto Cavado)
         // Começa na face inferior (Z=-2) e entra 1.2mm. 
         // Sobram 0.3mm de margem de segurança até à cavidade do chip.
-        translate([posTextoVersoH * fator_pos, posTextoVersoV * fator_pos, -2.1])
+        // 4. VERSO (Texto Cavado) corrigido
+        // Invertemos o sinal de posTextoVersoH porque o mirror inverte o sentido do eixo X
+        translate([-(posTextoVersoH * fator_pos), posTextoVersoV * fator_pos, -2.1])
             mirror([1,0,0]) 
             linear_extrude(height = 1.2)
                 if (temNFC) {
