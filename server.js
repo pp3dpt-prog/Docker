@@ -96,48 +96,46 @@ union() {
         }
     }
 
-    // --- BLOCO DE ADIÇÃO (Relevo Frontal) ---
-    color("white")
-    translate([${posTextoFrenteH}*fator_pos, ${posTextoFrenteV}*fator_pos, 2])
-        linear_extrude(height=1.5)
-            text("${nome}", size=(${tamFonte}/4), halign="center", valign="center", font="Liberation Sans:style=Bold");
-}
-`;
-
-    try {
-        fs.writeFileSync(tempScad, scadCode);
-        const cmd = `xvfb-run -a -s "-screen 0 640x480x24" openscad -o ${filename} ${tempScad}`;
-        
-        exec(cmd, async (error) => {
+    exec(cmd, async (error) => {
             if (error) {
                 console.error("Erro OpenSCAD:", error);
                 return res.status(500).json({ error: "Falha na geração 3D" });
             }
 
-            // Altera a linha do upload no server.js para isto:
-            const fileBuffer = fs.readFileSync(filename);
-            const { data, uploadError } = await supabase.storage
-                .from('medalhas')
-                .upload(`stls/${filename}`, fileBuffer, { 
-                    contentType: 'model/stl',
-                    upsert: true // Adiciona isto para evitar erros de ficheiros duplicados
-                });
-
-            if (uploadError) {
-                console.error("Erro no Upload Supabase:", uploadError); // Isto vai mostrar o erro real nos logs do Render
-                throw uploadError;
+            // Verifica se o ficheiro realmente existe antes de ler
+            if (!fs.existsSync(filename)) {
+                console.error("Ficheiro STL não foi encontrado no disco!");
+                return res.status(500).json({ error: "Ficheiro não gerado" });
             }
 
-            // Limpeza de ficheiros temporários
-            fs.unlinkSync(tempScad);
-            fs.unlinkSync(filename);
+            try {
+                const fileBuffer = fs.readFileSync(filename);
+                
+                // IMPORTANTE: Adicionamos logs para ver o erro real no painel do Render
+                const { data, error: uploadError } = await supabase.storage
+                    .from('medalhas')
+                    .upload(`stls/${filename}`, fileBuffer, { 
+                        contentType: 'model/stl',
+                        upsert: true 
+                    });
 
-            res.status(200).json({ success: true, file: data.path });
-        });
-    } catch (err) {
-        console.error("Erro interno:", err);
-        res.status(500).send("Erro no servidor");
-    }
+                if (uploadError) {
+                    console.error("ERRO SUPABASE:", uploadError.message);
+                    return res.status(500).json({ error: uploadError.message });
+                }
+
+                console.log("✅ Upload concluído com sucesso:", data.path);
+
+                // Limpeza
+                fs.unlinkSync(tempScad);
+                fs.unlinkSync(filename);
+
+                res.status(200).json({ success: true, file: data.path });
+
+            } catch (err) {
+                console.error("Erro no processo de upload:", err);
+                res.status(500).send("Erro interno no upload");
+            }
 });
 
 const port = process.env.PORT || 3000;
